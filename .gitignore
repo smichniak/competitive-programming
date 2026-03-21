@@ -1,4 +1,5 @@
 
 rust/target/
+rust/leetcode/src/problems/_mod_autogen.rs
 
 python/leetcode/old/

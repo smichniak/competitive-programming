@@ -1,7 +1,6 @@
-[package]
-name = "competitive-programming-rust"
-version = "0.1.0"
-edition = "2024"
-authors = ["smichniak"]
+[workspace]
+members = ["leetcode"]
+resolver = "2"
 
-[dependencies]
+[workspace.lints.rust]
+unsafe_code = "forbid"

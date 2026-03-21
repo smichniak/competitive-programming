@@ -3,5 +3,5 @@
 version = 4
 
 [[package]]
-name = "competitive-programming-rust"
+name = "leetcode"
 version = "0.1.0"

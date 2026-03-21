@@ -1,0 +1,19 @@
+[package]
+name = "leetcode"
+version = "0.1.0"
+edition = "2021"
+authors = ["smichniak"]
+description = "LeetCode solutions — one module per problem, tests in-file"
+publish = false
+
+[dependencies]
+
+[[bin]]
+name = "leetcode"
+path = "src/bin/leetcode.rs"
+
+[lib]
+path = "src/lib.rs"
+
+[lints]
+workspace = true
