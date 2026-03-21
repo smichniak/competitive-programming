@@ -1,0 +1,6 @@
+[project]
+name = "competitive-programming-python"
+version = "0.1.0"
+description = "LeetCode and competitive programming solutions"
+requires-python = ">=3.14"
+dependencies = []
