@@ -6,10 +6,10 @@ pub struct Solution;
 
 fn count_ones_from_digit_list(digits: Vec<u32>, ones_by_digit_number: &Vec<i32>) -> i32 {
     if digits.len() == 1 {
-        if digits[0] >= 1 {
-            return 1;
+        return if digits[0] >= 1 {
+            1
         } else {
-            return 0;
+            0
         }
     }
 
@@ -17,7 +17,7 @@ fn count_ones_from_digit_list(digits: Vec<u32>, ones_by_digit_number: &Vec<i32>)
     let last_digit = digits[0];
     let digit_count = digits.len() - 1;
 
-    let mut count = 0;
+    let mut count = cutoff_count;
 
     for d in 0..last_digit {
         count += ones_by_digit_number[digit_count];
@@ -25,8 +25,6 @@ fn count_ones_from_digit_list(digits: Vec<u32>, ones_by_digit_number: &Vec<i32>)
             count += 10_i32.pow(digit_count as u32);
         }
     }
-
-    count += cutoff_count;
 
     if last_digit == 1 {
         count += digits[1..].iter().fold(0, |acc, &d| acc * 10 + d as i32) + 1;
