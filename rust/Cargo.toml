@@ -1,5 +1,5 @@
 [workspace]
-members = ["leetcode"]
+members = ["leetcode", "potyczki"]
 resolver = "2"
 
 [workspace.lints.rust]
