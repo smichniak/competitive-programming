@@ -1,0 +1,20 @@
+[package]
+name = "potyczki"
+version = "0.1.0"
+edition = "2024"
+authors = ["smichniak"]
+description = "Potyczki Algorytmiczne — one binary per task (three-letter code + division A/B/C)"
+publish = false
+
+[dependencies]
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "zmi_c"
+path = "src/2026/zmi_c.rs"
+
+[[bin]]
+name = "kon_b"
+path = "src/2026/kon_b.rs"
