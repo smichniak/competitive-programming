@@ -22,3 +22,7 @@ path = "src/2026/kon_b.rs"
 [[bin]]
 name = "dos_c"
 path = "src/2026/dos_c.rs"
+
+[[bin]]
+name = "sto_b"
+path = "src/2026/sto_b.rs"
