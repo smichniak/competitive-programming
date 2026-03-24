@@ -8,10 +8,17 @@ input and compares stdout to <same_stem>.out. Exit code 1 if any test fails.
 Usage:
   ./run_tests.py              # all problems that have a folder under test/
   ./run_tests.py kon_b zmi_c  # only these binaries (if their test dirs exist)
+  ./run_tests.py --test-dir test/sto_b/tests sto_b  # scan DIR recursively for *.in
   ./run_tests.py -q           # quiet: only failures + totals
 
-Each directory test/<name>/ must match a Cargo [[bin]] name. All *.in files under
-that tree are run; output is compared to the sibling file with extension .out.
+Default mode: each directory test/<name>/ matches a Cargo [[bin]] name; all *.in files
+under that tree are run; each output is compared to the sibling <stem>.out next to the
+.in file.
+
+With --test-dir: DIR is the exact folder that contains tests or any ancestor; all *.in
+files under DIR are found recursively. Pass exactly one binary name (positional) as
+the Cargo --bin to run. Pairs use the same stem with .out in the same directory as the
+.in (no extra path suffixes).
 
 Respects CARGO_TARGET_DIR if set (same as cargo).
 """
@@ -42,7 +49,7 @@ def discover_problems(test_root: Path, only: list[str] | None) -> list[str]:
         names = [n for n in names if n in wanted]
         missing = wanted - set(names)
         for m in sorted(missing):
-            print(f"warning: no test directory test/{m}/", file=sys.stderr)
+            print(f"warning: no test directory {test_root / m}/", file=sys.stderr)
     return names
 
 
@@ -134,7 +141,10 @@ def main() -> int:
     parser.add_argument(
         "problems",
         nargs="*",
-        help="Binary names to test (default: every folder under test/)",
+        help=(
+            "Cargo binary name(s). With --test-dir: exactly one. "
+            "Otherwise: filter folders under test/ (default: all)"
+        ),
     )
     parser.add_argument(
         "--no-build",
@@ -159,13 +169,41 @@ def main() -> int:
         action="store_true",
         help="Only print failures and final summary",
     )
+    parser.add_argument(
+        "--test-dir",
+        type=Path,
+        default=None,
+        metavar="DIR",
+        help=(
+            "Directory to scan recursively for *.in (or a parent of such folders). "
+            "Relative paths are resolved from the potyczki crate directory. "
+            "Requires exactly one positional binary name. Each .in uses <stem>.out "
+            "in the same directory."
+        ),
+    )
     args = parser.parse_args()
 
-    _, workspace_root, test_root = repo_layout(Path(__file__))
-    problems = discover_problems(test_root, args.problems or None)
-    if not problems:
-        print("No test directories found under test/.")
-        return 0
+    potyczki_root, workspace_root, default_test_root = repo_layout(Path(__file__))
+
+    if args.test_dir is not None:
+        if len(args.problems) != 1:
+            parser.error(
+                "--test-dir requires exactly one BINARY (positional), the cargo --bin to run"
+            )
+        td = Path(args.test_dir)
+        scan_root = td if td.is_absolute() else (potyczki_root / td)
+        if not scan_root.is_dir():
+            print(f"Not a directory: {scan_root}", file=sys.stderr)
+            return 2
+        problems = [args.problems[0]]
+        scan_roots: list[tuple[str, Path]] = [(problems[0], scan_root)]
+    else:
+        test_root = default_test_root
+        problems = discover_problems(test_root, args.problems or None)
+        if not problems:
+            print(f"No test directories found under {test_root}/.")
+            return 0
+        scan_roots = [(prob, test_root / prob) for prob in problems]
 
     release = not args.debug
     if not args.no_build:
@@ -179,8 +217,7 @@ def main() -> int:
     if not quiet:
         print()
 
-    for prob in problems:
-        prob_dir = test_root / prob
+    for prob, prob_dir in scan_roots:
         bin_path = binary_path(workspace_root, prob, release)
         if not bin_path.is_file():
             print(
@@ -189,6 +226,10 @@ def main() -> int:
             continue
 
         in_files = sorted(prob_dir.rglob("*.in"))
+        if not in_files and args.test_dir is not None:
+            print(f"=== {prob} ===\n  no *.in files under {prob_dir}\n")
+            continue
+
         pass_n = fail_n = 0
         skip_n = 0
         if quiet:
