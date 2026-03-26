@@ -30,3 +30,11 @@ path = "src/2026/sto_b.rs"
 [[bin]]
 name = "dod_c"
 path = "src/2026/dod_c.rs"
+
+[[bin]]
+name = "kam_b"
+path = "src/2026/kam_b.rs"
+
+[[bin]]
+name = "nas_c"
+path = "src/2026/nas_c.rs"
