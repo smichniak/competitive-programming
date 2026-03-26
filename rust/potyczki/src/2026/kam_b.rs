@@ -187,29 +187,82 @@ fn process_district(lines: &mut std::io::Lines<std::io::StdinLock<'_>>) -> &'sta
         }
     }
 
-    let mut neighbor_to_last;
-    let mut collected_reps: HashMap<usize, usize> = HashMap::new();
-    let mut removed_in_this_chunk = HashSet::new();
+    let mut removed_uf = UnionFind::new();
+    for city in 0..n {
+        removed_uf.make_set(city);
+    }
+    let mut removed_in_this_chunk = vec![false; n];
+    let mut chunk_reps: Vec<Option<HashMap<usize, usize>>> = vec![None; n];
 
     while let Some(party) = one_chunkers.pop() {
         if !removed_parties.contains(&party) {
-            neighbor_to_last = party_wins[party]
-                .iter()
-                .flat_map(|city| graph[*city].iter())
-                .any(|neighbor| removed_in_this_chunk.contains(neighbor));
-
-            if !neighbor_to_last {
-                collected_reps = HashMap::new();
+            let mut old_roots = Vec::new();
+            for city in &party_wins[party] {
+                for &neighbor in &graph[*city] {
+                    if removed_in_this_chunk[neighbor] {
+                        old_roots.push(*removed_uf.find(&neighbor).unwrap());
+                    }
+                }
             }
+            old_roots.sort_unstable();
+            old_roots.dedup();
 
             for city in &party_wins[party] {
-                removed_in_this_chunk.insert(city);
+                removed_in_this_chunk[*city] = true;
+            }
+            for city in &party_wins[party] {
+                for &neighbor in &graph[*city] {
+                    if removed_in_this_chunk[neighbor] {
+                        removed_uf.union(city, &neighbor);
+                    }
+                }
+            }
+
+            let mut best_idx = None;
+            let mut best_len = 0;
+            for (i, oroot) in old_roots.iter().enumerate() {
+                let len = chunk_reps[*oroot].as_ref().map_or(0, |m| m.len());
+                if len > best_len {
+                    best_len = len;
+                    best_idx = Some(i);
+                }
+            }
+            let mut collected_reps: HashMap<usize, usize> = if let Some(bi) = best_idx {
+                chunk_reps[old_roots[bi]].take().unwrap_or_default()
+            } else {
+                HashMap::new()
+            };
+            collected_reps.remove(&party);
+            for (i, oroot) in old_roots.iter().enumerate() {
+                if Some(i) == best_idx {
+                    continue;
+                }
+                if let Some(old_reps) = chunk_reps[*oroot].take() {
+                    for (neighbor_party, rep) in old_reps {
+                        if !removed_parties.contains(&neighbor_party) && neighbor_party != party {
+                            if let Some(part_rep) = collected_reps.get(&neighbor_party) {
+                                if !party_chunks.same_set(part_rep, &rep) {
+                                    party_chunks.union(part_rep, &rep);
+                                    party_chunk_count[neighbor_party] -= 1;
+                                    if party_chunk_count[neighbor_party] == 1 {
+                                        one_chunkers.push(neighbor_party);
+                                    }
+                                }
+                            } else {
+                                collected_reps.insert(neighbor_party, rep);
+                            }
+                        }
+                    }
+                }
             }
 
             for city in &party_wins[party] {
                 for &neighbor in &graph[*city] {
                     let neighbor_party = winners[neighbor];
-                    if neighbor_party != party && !removed_parties.contains(&neighbor_party) {
+                    if neighbor_party != party
+                        && !removed_parties.contains(&neighbor_party)
+                        && !removed_in_this_chunk[neighbor]
+                    {
                         if let Some(part_rep) = collected_reps.get(&neighbor_party) {
                             if !party_chunks.same_set(part_rep, &neighbor) {
                                 party_chunks.union(part_rep, &neighbor);
@@ -220,13 +273,13 @@ fn process_district(lines: &mut std::io::Lines<std::io::StdinLock<'_>>) -> &'sta
                             }
                         } else {
                             collected_reps.insert(neighbor_party, neighbor);
-                            if party_chunk_count[neighbor_party] == 1 {
-                                one_chunkers.push(neighbor_party);
-                            }
                         }
                     }
                 }
             }
+
+            let root = *removed_uf.find(&party_wins[party][0]).unwrap();
+            chunk_reps[root] = Some(collected_reps);
 
             removed_parties.insert(party);
         }
