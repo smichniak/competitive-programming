@@ -42,3 +42,7 @@ path = "src/2026/nas_c.rs"
 [[bin]]
 name = "bur_c"
 path = "src/2026/bur_c.rs"
+
+[[bin]]
+name = "pal_c"
+path = "src/2026/pal_c.rs"
