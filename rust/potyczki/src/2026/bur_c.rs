@@ -7,7 +7,7 @@ fn get_divisors(n: usize) -> Vec<usize> {
     let mut out = Vec::new();
     let mut i = 1usize;
     while i * i <= n {
-        if n % i == 0 {
+        if n.is_multiple_of(i) {
             out.push(i);
             let j = n / i;
             if j != i {
